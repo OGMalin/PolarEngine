@@ -3,7 +3,11 @@
 #include "Console.h"
 #include "Engine.h"
 #include "Utility.h"
-#include <iostream>
+#include "StopWatch.h"
+#include "ChessBoard.h"
+#include "MoveGenerator.h"
+
+//#include <iostream>
 
 using namespace std;
 
@@ -17,6 +21,7 @@ Console con;
 Engine eng;
 
 bool debug=false;
+bool ucimode = false;
 
 void start(std::string inifile)
 {
@@ -24,10 +29,51 @@ void start(std::string inifile)
 	hEvent[1] = eng.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
+int perft(int depth, bool init, int ply)
+{
+	int moveit;
+	static int testNodes;
+	static MoveList testList[30];
+	static MoveGenerator testGen;
+	static ChessBoard b;
+	if (init)
+	{
+		testNodes = 0;
+		b.setFen(STARTPOSITION);
+	}
+	if (depth == 0)
+		return ++testNodes;
+	testGen.makeMoves(b, testList[ply]);
+	moveit = 0;
+	while (moveit != testList[ply].end())
+	{
+		testGen.doMove(b, testList[ply].list[moveit]);
+		perft(depth - 1, false, ply + 1);
+		testGen.undoMove(b, testList[ply].list[moveit]);
+		++moveit;
+	};
+	return testNodes;
+}
+
+void startPerft(int depth)
+{
+	double d;
+	int i;
+	char sz[256];
+	StopWatch sw;
+	sw.start();
+	i = perft(depth, true, 0);
+	sw.stop();
+	d = (double)sw.read() / 1000.0;
+	sprintf_s(sz, 256, "%i nodes in %.2f seconds (%ik n/s).", i, d, (int)((double)i / (d * 1000)));
+	con.write(sz);
+}
+
 // Command interpreter
 bool doCommand(std::string& s)
 {
 	int next = 1;
+	string arg1;
 	string cmd = lowercase(getWord(s, next++));
 	if (cmd.empty())
 		return true;
@@ -42,6 +88,7 @@ bool doCommand(std::string& s)
 	//	If no uciok is sent within a certain time period, the engine task will be killed by the GUI.
 	if (cmd == "uci")
 	{
+		ucimode = true;
 		con.write("id name " + string(ID_NAME));
 		con.write("id author " + string(ID_AUTHOR));
 
@@ -90,7 +137,7 @@ bool doCommand(std::string& s)
 	//		"setoption name Style value Risky\n"
 	//		"setoption name Clear Hash\n"
 	//		"setoption name NalimovPath value c:\chess\tb\4;c:\chess\tb\5\n"
-	if (cmd == "register")
+	if (cmd == "setoption")
 	{
 		return true;
 	}
@@ -189,6 +236,9 @@ bool doCommand(std::string& s)
 	//	don't forget the "bestmove" and possibly the "ponder" token when finishing the search
 	if (cmd == "stop")
 	{
+		EngineMessage msg;
+		msg.cmd = ENG_stop;
+		eng.write(msg);
 		return true;
 	}
 
@@ -207,10 +257,28 @@ bool doCommand(std::string& s)
 		return false;
 	}
 
+	//* test
+	//	Testcommand for use under developing.
+	//	* perft <depth>
+	if (cmd == "test")
+	{
+		if (ucimode)
+			return true;
+		arg1 = getWord(s, next++);
+		if (arg1 == "perft")
+			startPerft(atoi(getWord(s, next++).c_str()));
+		return true;
+	}
+
 	if (debug)
 		con.write("info string Unknown command: " + cmd);
 
 	return true;
+}
+
+void EngineMsg(EngineMessage& msg)
+{
+
 }
 
 // The engines main loop.
@@ -218,6 +286,7 @@ void run()
 {
 	DWORD dw;
 	string s;
+	EngineMessage msg;
 	while (1)
 	{
 		dw = WaitForMultipleObjects(2, hEvent, FALSE, 100);
@@ -233,15 +302,16 @@ void run()
 				}
 				break;
 			case WAIT_ENGINE: // Meldinger fra sjakkmotor
-//				while (eng.read(s))
-//				{
-//					engine(s);
-//				}
+				while (eng.read(msg))
+				{
+					EngineMsg(msg);
+				}
 				break;
 			case WAIT_TIMEOUT:
 				break;
 			default:
-				cerr << "Ukjent event." << endl;
+				if (debug)
+					con.write("info string Unknown event in main loop.");
 				break;
 		}
 	}

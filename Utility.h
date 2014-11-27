@@ -57,3 +57,16 @@ extern bool threadRunning(HANDLE hThread);
 // Tidsfunksjoner
 extern std::string timeToString(const FILETIME& t);
 extern std::string timeToString(const SYSTEMTIME& t);
+
+// 32 bit random generator
+// Five variants for test unmask only one.
+//#define rand32() MSrand32()      // MS rand() as 32 bit
+//#define rand32() DK1rand32()     // D.Knuths random generator V2,P185
+#define rand32() DK2rand32()     // D.Knuths random generator V2.P186
+//#define rand32() Mersenne32()    // Mersenne generator from Agner Fog.
+//#define rand32() CRAFTYrand32()  // From Hyatt's Crafty
+//#define rand32() GIrand32()      // From Gerd Isenberg 
+extern unsigned int rand32();
+
+// 64 bit random generator
+extern unsigned __int64 rand64();

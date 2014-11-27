@@ -119,15 +119,28 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ChessBoard.cpp" />
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MoveGenerator.cpp" />
+    <ClCompile Include="StopWatch.cpp" />
     <ClCompile Include="Utility.cpp" />
+    <ClCompile Include="Zobrist.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BasicBoard.h" />
+    <ClInclude Include="ChessBoard.h" />
+    <ClInclude Include="ChessDefs.h" />
+    <ClInclude Include="ChessMove.h" />
     <ClInclude Include="Console.h" />
     <ClInclude Include="Engine.h" />
+    <ClInclude Include="MoveGenerator.h" />
+    <ClInclude Include="MoveList.h" />
+    <ClInclude Include="Relations.h" />
+    <ClInclude Include="StopWatch.h" />
     <ClInclude Include="Utility.h" />
+    <ClInclude Include="Zobrist.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />

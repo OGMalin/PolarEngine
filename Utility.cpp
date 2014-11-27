@@ -5,6 +5,7 @@
 
 #include <Windows.h>
 #include <string>
+#include "Utility.h"
 
 using namespace std;
 
@@ -253,5 +254,166 @@ std::string timeToString(const FILETIME& t)
 	if (!FileTimeToSystemTime(&t, &st))
 		return "";
 	return timeToString(st);
+}
+
+/*
+// Random generator built on MSVC++ runtime function
+unsigned int MSrand32()
+{
+return (rand()<<17)+(rand()<<2)+(rand()&0x03);
+}
+*/
+
+// Random number generator
+// It is building upon Donald Knuth's description in 
+// "The Art Of Computer Programming" Vol.2 third edition page 185-186
+unsigned int DK1rand32()
+{
+	//  const unsigned int prime=2147483647;
+	const unsigned int a = 48271;
+	const unsigned int q = 44488;  // prime/a
+	const unsigned int r = 3399;   // prime%a
+
+	//  static unsigned int seed=time(NULL);
+	static unsigned int seed = 1;
+	unsigned int x;
+	x = a*(seed%q) - r*(seed / q);
+	seed = x;
+	return x;
+}
+
+unsigned int DK2rand32()
+{
+	const unsigned int prime = 2147483399;
+	const unsigned int a = 40692;
+	const unsigned int q = 52774;
+	const unsigned int r = 3791;
+
+	//  static unsigned int seed=time(NULL);
+	static unsigned int seed = 1;
+	unsigned int y, x;
+	y = a*(seed%q) - r*(seed / q);
+	seed = y;
+	x = DK1rand32();
+	if (y >= x)
+		return (x + prime - y - 1);
+	return (x - y);
+}
+
+/*
+// After idea from Agner Fog
+unsigned int Mersenne32()
+{
+static const unsigned long N = 351, M = 175, R = 19, TEMU = 11, TEMS = 7,
+TEMT = 15, TEML = 17,MATRIX_A = 0xE4BD75F5,
+TEMB =0x655E5280, TEMC = 0xFFD58000;
+static bool init=false;
+static unsigned int mt[N];
+static int mti;
+
+if (!init)
+{
+//  static unsigned int seed=time(NULL);
+static unsigned int seed=1;
+for (mti=0; mti<N; mti++)
+{
+seed = seed * 29943829 - 1;
+mt[mti] = seed;
+}
+init=true;
+}
+
+unsigned long y;
+
+if (mti >= N)
+{
+// generate N words at one time
+const unsigned int LOWER_MASK = (1 << R) - 1; // lower R bits
+const unsigned int UPPER_MASK = -1 << R;      // upper 32-R bits
+int kk, km;
+for (kk=0, km=M; kk < N-1; kk++)
+{
+y = (mt[kk] & UPPER_MASK) | (mt[kk+1] & LOWER_MASK);
+mt[kk] = mt[km] ^ (y >> 1) ^ (-(signed int)(y & 1) & MATRIX_A);
+if (++km >= N) km = 0;
+}
+
+y = (mt[N-1] & UPPER_MASK) | (mt[0] & LOWER_MASK);
+mt[N-1] = mt[M-1] ^ (y >> 1) ^ (-(signed int)(y & 1) & MATRIX_A);
+mti = 0;
+}
+
+y = mt[mti++];
+
+// Tempering (May be omitted):
+y ^=  y >> TEMU;
+y ^= (y << TEMS) & TEMB;
+y ^= (y << TEMT) & TEMC;
+y ^=  y >> TEML;
+
+return y;
+};
+*/
+
+/*
+From Robert Hyatt's Crafty (used for test)
+A 32 bit random number generator. An implementation in C of the algorithm given by
+Knuth, the art of computer programming, vol. 2, pp. 26-27. We use e=32, so
+we have to evaluate y(n) = y(n - 24) + y(n - 55) mod 2^32, which is implicitly
+done by unsigned arithmetic.
+*/
+/*
+unsigned int CRAFTYrand32() {
+//  random numbers from Mathematica 2.0.
+//  SeedRandom = 1;
+//  Table[Random[Integer, {0, 2^32 - 1}]
+static const unsigned long x[55] = {
+1410651636UL, 3012776752UL, 3497475623UL, 2892145026UL, 1571949714UL,
+3253082284UL, 3489895018UL,  387949491UL, 2597396737UL, 1981903553UL,
+3160251843UL,  129444464UL, 1851443344UL, 4156445905UL,  224604922UL,
+1455067070UL, 3953493484UL, 1460937157UL, 2528362617UL,  317430674UL,
+3229354360UL,  117491133UL,  832845075UL, 1961600170UL, 1321557429UL,
+747750121UL,  545747446UL,  810476036UL,  503334515UL, 4088144633UL,
+2824216555UL, 3738252341UL, 3493754131UL, 3672533954UL,   29494241UL,
+1180928407UL, 4213624418UL,   33062851UL, 3221315737UL, 1145213552UL,
+2957984897UL, 4078668503UL, 2262661702UL,   65478801UL, 2527208841UL,
+1960622036UL,  315685891UL, 1196037864UL,  804614524UL, 1421733266UL,
+2017105031UL, 3882325900UL,  810735053UL,  384606609UL, 2393861397UL };
+static int init = 1;
+static unsigned long y[55];
+static int j, k;
+unsigned long ul;
+if (init)
+{
+int i;
+init = 0;
+for (i = 0; i < 55; i++) y[i] = x[i];
+j = 24 - 1;
+k = 55 - 1;
+}
+
+ul = (y[k] += y[j]);
+if (--j < 0) j = 55 - 1;
+if (--k < 0) k = 55 - 1;
+return((unsigned int)ul);
+}
+*/
+
+/*
+// A simple rand generator posted by Gerd Isenberg on CCC.
+unsigned int GIrand32()
+{
+static unsigned int r = 0;
+return (r = 1664525L*r + 1013904223L);
+}
+*/
+
+unsigned __int64 rand64()
+{
+	unsigned __int64 i64, low, high;
+	low = rand32();
+	high = rand32();
+	i64 = (high << 32) | low;
+	return i64;
 }
 
