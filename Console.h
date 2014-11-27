@@ -14,6 +14,7 @@ class Console
 	std::queue<std::string> inQue;
 public:
 	HANDLE hEvent;
+	bool debug;
 	Console();
 	virtual ~Console();
 	bool read(std::string &s);

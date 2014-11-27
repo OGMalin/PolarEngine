@@ -48,6 +48,7 @@ void Console::threadLoop(void* lpv)
 Console::Console()
 {
 	abort = false;
+	debug = false;
 	hEvent = NULL;
 	hRead = GetStdHandle(STD_INPUT_HANDLE);
 	hWrite = GetStdHandle(STD_OUTPUT_HANDLE);

@@ -2,6 +2,7 @@
 
 Engine::Engine()
 {
+	debug = false;
 
 }
 

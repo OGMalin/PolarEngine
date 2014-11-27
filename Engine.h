@@ -10,6 +10,7 @@ struct EngineMessage
 class Engine
 {
 public:
+	bool debug;
 	HANDLE hEvent;
 	Engine();
 	virtual ~Engine();
