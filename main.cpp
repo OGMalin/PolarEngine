@@ -19,6 +19,7 @@ void start(std::string inifile)
 	hEvent[1] = eng.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 }
 
+// Command interpreter
 bool doCommand(std::string& s)
 {
 	int next = 1;
@@ -36,10 +37,11 @@ bool doCommand(std::string& s)
 		return true;
 	}
 
-	cerr << "Ukjent kommando: " << cmd << endl;
+	cerr << "Unknown command: " << cmd << endl;
 	return true;
 }
 
+// The engines main loop.
 void run()
 {
 	DWORD dw;
