@@ -6,6 +6,7 @@
 #include "StopWatch.h"
 #include "ChessBoard.h"
 #include "MoveGenerator.h"
+#include "ChessGame.h"
 
 //#include <iostream>
 
@@ -22,11 +23,13 @@ Engine eng;
 
 bool debug=false;
 bool ucimode = false;
+ChessGame currentGame;
 
 void start(std::string inifile)
 {
 	hEvent[0] = con.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	hEvent[1] = eng.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
+	currentGame.setStartPosition(STARTPOSITION);
 }
 
 int perft(int depth, bool init, int ply)
@@ -39,7 +42,7 @@ int perft(int depth, bool init, int ply)
 	if (init)
 	{
 		testNodes = 0;
-		b.setFen(STARTPOSITION);
+		currentGame.getPosition(b);
 	}
 	if (depth == 0)
 		return ++testNodes;
@@ -73,8 +76,9 @@ void startPerft(int depth)
 bool doCommand(std::string& s)
 {
 	int next = 1;
-	string arg1;
-	string cmd = lowercase(getWord(s, next++));
+	string arg1, arg2, arg3, cmd;
+
+	cmd = lowercase(getWord(s, next++));
 	if (cmd.empty())
 		return true;
 
@@ -172,6 +176,8 @@ bool doCommand(std::string& s)
 	//	after "ucinewgame" to wait for the engine to finish its operation.
 	if (cmd == "ucinewgame")
 	{
+		currentGame.setStartPosition(STARTPOSITION);
+		// Clear hash etc.
 		return true;
 	}
 
@@ -183,6 +189,43 @@ bool doCommand(std::string& s)
 	//					 the last position sent to the engine, the GUI should have sent a "ucinewgame" inbetween.
 	if (cmd == "position")
 	{
+		arg1 = getWord(s, next++);
+		while (!arg1.empty())
+		{
+			if (arg1 == "fen")
+			{
+				string fen;
+				arg2 = getWord(s, next++);
+				while (!arg2.empty())
+				{
+					if (arg2 == "moves")
+					{
+						--next;
+						break;
+					}
+					fen += ' ';
+					fen += arg2;
+					arg2 = getWord(s, next++);
+				}
+				fen = trim(fen);
+				currentGame.setStartPosition(fen.c_str());
+			}
+			else if (arg1 == "startpos")
+			{
+				currentGame.setStartPosition(STARTPOSITION);
+			}
+			else if (arg1 == "moves")
+			{
+				ChessMove m;
+				arg2 = getWord(s, next++);
+				while (!arg2.empty())
+				{
+					currentGame.addMove(arg2);
+					arg2 = getWord(s, next++);
+				}
+			}
+			arg1 = getWord(s, next++);
+		}
 		return true;
 	}
 
@@ -266,7 +309,10 @@ bool doCommand(std::string& s)
 			return true;
 		arg1 = getWord(s, next++);
 		if (arg1 == "perft")
-			startPerft(atoi(getWord(s, next++).c_str()));
+		{
+			arg2 = getWord(s, next++);
+			startPerft(atoi(arg2.c_str()));
+		}
 		return true;
 	}
 

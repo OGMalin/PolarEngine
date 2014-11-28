@@ -120,6 +120,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ChessBoard.cpp" />
+    <ClCompile Include="ChessGame.cpp" />
     <ClCompile Include="Console.cpp" />
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="main.cpp" />
@@ -132,6 +133,7 @@
     <ClInclude Include="BasicBoard.h" />
     <ClInclude Include="ChessBoard.h" />
     <ClInclude Include="ChessDefs.h" />
+    <ClInclude Include="ChessGame.h" />
     <ClInclude Include="ChessMove.h" />
     <ClInclude Include="Console.h" />
     <ClInclude Include="Engine.h" />

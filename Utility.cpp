@@ -417,3 +417,24 @@ unsigned __int64 rand64()
 	return i64;
 }
 
+bool existIn(char c, const char* str)
+{
+	char* p = (char*)str;
+	while (*p)
+	{
+		if (c == *p)
+			return true;
+		p++;
+	}
+	return false;
+}
+
+bool existIn(const char* c, const char* str)
+{
+	size_t i = 0, len = strlen(c);
+	while (i<len)
+		if (existIn(c[i++], str))
+			return true;
+	return false;
+}
+

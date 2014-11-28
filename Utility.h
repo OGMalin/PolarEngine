@@ -58,6 +58,10 @@ extern bool threadRunning(HANDLE hThread);
 extern std::string timeToString(const FILETIME& t);
 extern std::string timeToString(const SYSTEMTIME& t);
 
+// 
+extern bool existIn(char c, const char* str);
+extern bool existIn(const char* c, const char* str);
+
 // 32 bit random generator
 // Five variants for test unmask only one.
 //#define rand32() MSrand32()      // MS rand() as 32 bit
