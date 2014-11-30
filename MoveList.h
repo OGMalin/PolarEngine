@@ -34,12 +34,13 @@ public:
   ChessMove list[MOVELISTSIZE];
   int size; // pointer to next avaiable element
   MoveList(){ clear(); };
+	MoveList(const MoveList& ml){ copy(ml); };
   virtual ~MoveList(){};
   inline void clear(){ size=0;};
   int begin(){ return 0; };
   int end(){ return size; };
   bool empty(){ return (size==0); };
-  void copy(MoveList& ml)
+  void copy(const MoveList& ml)
   {
     for (int i=0;i<ml.size;i++)
       list[i]=ml.list[i];

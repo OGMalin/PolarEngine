@@ -6,7 +6,6 @@
 #include "StopWatch.h"
 #include "ChessBoard.h"
 #include "MoveGenerator.h"
-#include "ChessGame.h"
 
 //#include <iostream>
 
@@ -23,13 +22,16 @@ Engine eng;
 
 bool debug=false;
 bool ucimode = false;
-ChessGame currentGame;
+ChessBoard startBoard, currentBoard;
+MoveList currentMoves;
 
 void start(std::string inifile)
 {
 	hEvent[0] = con.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
 	hEvent[1] = eng.hEvent = CreateEvent(NULL, FALSE, FALSE, NULL);
-	currentGame.setStartPosition(STARTPOSITION);
+	startBoard.setFen(STARTPOSITION);
+	currentBoard.copy(startBoard);
+	currentMoves.clear();
 }
 
 int perft(int depth, bool init, int ply)
@@ -42,7 +44,7 @@ int perft(int depth, bool init, int ply)
 	if (init)
 	{
 		testNodes = 0;
-		currentGame.getPosition(b);
+		b.copy(currentBoard);
 	}
 	if (depth == 0)
 		return ++testNodes;
@@ -176,7 +178,9 @@ bool doCommand(std::string& s)
 	//	after "ucinewgame" to wait for the engine to finish its operation.
 	if (cmd == "ucinewgame")
 	{
-		currentGame.setStartPosition(STARTPOSITION);
+		startBoard.setFen(STARTPOSITION);
+		currentBoard.copy(startBoard);
+		currentMoves.clear();
 		// Clear hash etc.
 		return true;
 	}
@@ -189,6 +193,9 @@ bool doCommand(std::string& s)
 	//					 the last position sent to the engine, the GUI should have sent a "ucinewgame" inbetween.
 	if (cmd == "position")
 	{
+		currentBoard.clear();
+		startBoard.clear();
+		currentMoves.clear();
 		arg1 = getWord(s, next++);
 		while (!arg1.empty())
 		{
@@ -208,19 +215,22 @@ bool doCommand(std::string& s)
 					arg2 = getWord(s, next++);
 				}
 				fen = trim(fen);
-				currentGame.setStartPosition(fen.c_str());
+				startBoard.setFen(fen.c_str());
 			}
 			else if (arg1 == "startpos")
 			{
-				currentGame.setStartPosition(STARTPOSITION);
+				startBoard.setFen(STARTPOSITION);
 			}
 			else if (arg1 == "moves")
 			{
 				ChessMove m;
+				currentBoard.copy(startBoard);
 				arg2 = getWord(s, next++);
 				while (!arg2.empty())
 				{
-					currentGame.addMove(arg2);
+					m=currentBoard.getMoveFromText(arg2);
+					currentMoves.push_back(m);
+					currentBoard.move(m);
 					arg2 = getWord(s, next++);
 				}
 			}
@@ -271,6 +281,79 @@ bool doCommand(std::string& s)
 	//				search until the "stop" command.Do not exit the search without being told so in this mode!
 	if (cmd == "go")
 	{
+		EngineRequest req;
+		ChessMove m;
+		MoveList ml;
+
+		req.cmd = ENG_go;
+		req.board = startBoard;
+		req.moves = currentMoves;
+
+		arg1 = getWord(s, next++);
+		while (!arg1.empty())
+		{
+			if (arg1 == "searchmoves")
+			{
+				arg2 = getWord(s, next++);
+				while (!arg2.empty())
+				{
+					m = currentBoard.getMoveFromText(arg2);
+					if (m.empty())
+					{
+						--next;
+						break;
+					}
+					req.searchmoves.push_back(m);
+					arg2 = getWord(s, next++);
+				}
+			}
+			else if (arg1 == "ponder")
+			{
+				req.ponder = true;
+			}
+			else if (arg1 == "wtime")
+			{
+				req.wtime = atoi(getWord(s, next++).c_str());
+			}
+			else if (arg1 == "btime")
+			{
+				req.btime = atoi(getWord(s, next++).c_str());
+			}
+			else if (arg1 == "winc")
+			{
+				req.winc = atoi(getWord(s, next++).c_str());
+			}
+			else if (arg1 == "binc")
+			{
+				req.binc = atoi(getWord(s, next++).c_str());
+			}
+			else if (arg1 == "movestogo")
+			{
+				req.movestogo = atoi(getWord(s, next++).c_str());
+			}
+			else if (arg1 == "depth")
+			{
+				req.depth = atoi(getWord(s, next++).c_str());
+			}
+			else if (arg1 == "nodes")
+			{
+				req.nodes = atoi(getWord(s, next++).c_str());
+			}
+			else if (arg1 == "mate")
+			{
+				req.mate = atoi(getWord(s, next++).c_str());
+			}
+			else if (arg1 == "movetime")
+			{
+				req.movetime = atoi(getWord(s, next++).c_str());
+			}
+			else if (arg1 == "infinite")
+			{
+				req.infinite = true;
+			}
+			arg1 = getWord(s, next++);
+		}
+		eng.write(req);
 		return true;
 	}
 
@@ -279,7 +362,7 @@ bool doCommand(std::string& s)
 	//	don't forget the "bestmove" and possibly the "ponder" token when finishing the search
 	if (cmd == "stop")
 	{
-		EngineMessage msg;
+		EngineRequest msg;
 		msg.cmd = ENG_stop;
 		eng.write(msg);
 		return true;
@@ -322,7 +405,7 @@ bool doCommand(std::string& s)
 	return true;
 }
 
-void EngineMsg(EngineMessage& msg)
+void EngineMsg(EngineResponse& msg)
 {
 
 }
@@ -332,7 +415,7 @@ void run()
 {
 	DWORD dw;
 	string s;
-	EngineMessage msg;
+	EngineResponse engine_msg;
 	while (1)
 	{
 		dw = WaitForMultipleObjects(2, hEvent, FALSE, 100);
@@ -348,9 +431,9 @@ void run()
 				}
 				break;
 			case WAIT_ENGINE: // Meldinger fra sjakkmotor
-				while (eng.read(msg))
+				while (eng.read(engine_msg))
 				{
-					EngineMsg(msg);
+					EngineMsg(engine_msg);
 				}
 				break;
 			case WAIT_TIMEOUT:
@@ -376,4 +459,5 @@ int main(int argc, char* argv[])
 	run();
 
 	CloseHandle(hEvent[0]);
+	CloseHandle(hEvent[1]);
 }

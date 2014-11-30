@@ -15,12 +15,12 @@ Engine::~Engine()
 	DeleteCriticalSection(&engCS);
 }
 
-bool Engine::read(EngineMessage& msg)
+bool Engine::read(EngineResponse& msg)
 {
 	return false;
 }
 
-void Engine::write(EngineMessage& msg)
+void Engine::write(EngineRequest& msg)
 {
 
 }
