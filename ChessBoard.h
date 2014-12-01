@@ -55,7 +55,13 @@ public:
   void fixMove(ChessMove& m);
 
   bool isLegal();
+
+	// Return:
+	// 0 - No
+	// 1 - Mate
+	// 2 - Stalemate
   int gameEnd();
+
   bool insufficientMaterial();
 
   HASHKEY getHashkey();

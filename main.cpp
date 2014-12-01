@@ -216,10 +216,12 @@ bool doCommand(std::string& s)
 				}
 				fen = trim(fen);
 				startBoard.setFen(fen.c_str());
+				currentBoard.copy(startBoard);
 			}
 			else if (arg1 == "startpos")
 			{
 				startBoard.setFen(STARTPOSITION);
+				currentBoard.copy(startBoard);
 			}
 			else if (arg1 == "moves")
 			{
@@ -373,6 +375,9 @@ bool doCommand(std::string& s)
 	//	the user has played.The engine should continue searching but switch from pondering to normal search.
 	if (cmd == "ponderhit")
 	{
+		EngineRequest req;
+		req.cmd = ENG_ponderhit;
+		eng.write(req);
 		return true;
 	}
 	
